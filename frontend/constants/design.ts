@@ -84,4 +84,4 @@ export const Shadows = {
 // API config — update this to point to your backend
 // export const API_URL = 'http://localhost:3001';
 // For physical device testing, use your machine's local IP:
-export const API_URL = "http://192.168.1.X:3001";
+export const API_URL = "http://10.23.29.150:3001";

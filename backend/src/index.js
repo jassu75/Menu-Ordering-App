@@ -1,6 +1,6 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
 
 const app = express();
 app.use(cors());
@@ -9,64 +9,234 @@ app.use(express.json());
 // ─── Menu Data ───────────────────────────────────────────────────────────────
 const MENU = {
   starters: [
-    { id: 'S1', name: 'Truffle Arancini', price: 14, description: 'Crispy risotto balls with black truffle and fontina', emoji: '🍚', tags: ['vegetarian'] },
-    { id: 'S2', name: 'Tuna Tataki', price: 18, description: 'Seared yellowfin, ponzu, micro greens, sesame', emoji: '🐟', tags: [] },
-    { id: 'S3', name: 'Burrata Board', price: 16, description: 'Fresh burrata, heirloom tomatoes, basil oil, sea salt', emoji: '🧀', tags: ['vegetarian'] },
-    { id: 'S4', name: 'Crispy Calamari', price: 15, description: 'Lemon aioli, marinara, fresh herbs', emoji: '🦑', tags: [] },
+    {
+      id: "S1",
+      name: "Truffle Arancini",
+      price: 14,
+      description: "Crispy risotto balls with black truffle and fontina",
+      emoji: "🍚",
+      tags: ["vegetarian"],
+    },
+    {
+      id: "S2",
+      name: "Tuna Tataki",
+      price: 18,
+      description: "Seared yellowfin, ponzu, micro greens, sesame",
+      emoji: "🐟",
+      tags: [],
+    },
+    {
+      id: "S3",
+      name: "Burrata Board",
+      price: 16,
+      description: "Fresh burrata, heirloom tomatoes, basil oil, sea salt",
+      emoji: "🧀",
+      tags: ["vegetarian"],
+    },
+    {
+      id: "S4",
+      name: "Crispy Calamari",
+      price: 15,
+      description: "Lemon aioli, marinara, fresh herbs",
+      emoji: "🦑",
+      tags: [],
+    },
   ],
   mains: [
-    { id: 'M1', name: 'Wagyu Burger', price: 28, description: 'A5 wagyu blend, aged cheddar, truffle mayo, brioche bun', emoji: '🍔', tags: [] },
-    { id: 'M2', name: 'Spicy Chicken Sandwich', price: 22, description: 'Nashville hot, pickled slaw, comeback sauce, potato roll', emoji: '🍗', tags: ['spicy'] },
-    { id: 'M3', name: 'Seared Salmon', price: 32, description: 'Miso glaze, bok choy, jasmine rice, ginger beurre blanc', emoji: '🐠', tags: [] },
-    { id: 'M4', name: 'Wild Mushroom Risotto', price: 24, description: 'Arborio, porcini, parmesan, truffle oil, fresh herbs', emoji: '🍄', tags: ['vegetarian'] },
-    { id: 'M5', name: 'Ribeye Steak', price: 52, description: '12oz prime ribeye, herb butter, roasted bone marrow', emoji: '🥩', tags: [] },
-    { id: 'M6', name: 'Lobster Linguine', price: 42, description: 'Half Maine lobster, cherry tomato, white wine, basil', emoji: '🦞', tags: [] },
+    {
+      id: "M1",
+      name: "Wagyu Burger",
+      price: 28,
+      description: "A5 wagyu blend, aged cheddar, truffle mayo, brioche bun",
+      emoji: "🍔",
+      tags: [],
+    },
+    {
+      id: "M2",
+      name: "Spicy Chicken Sandwich",
+      price: 22,
+      description: "Nashville hot, pickled slaw, comeback sauce, potato roll",
+      emoji: "🍗",
+      tags: ["spicy"],
+    },
+    {
+      id: "M3",
+      name: "Seared Salmon",
+      price: 32,
+      description: "Miso glaze, bok choy, jasmine rice, ginger beurre blanc",
+      emoji: "🐠",
+      tags: [],
+    },
+    {
+      id: "M4",
+      name: "Wild Mushroom Risotto",
+      price: 24,
+      description: "Arborio, porcini, parmesan, truffle oil, fresh herbs",
+      emoji: "🍄",
+      tags: ["vegetarian"],
+    },
+    {
+      id: "M5",
+      name: "Ribeye Steak",
+      price: 52,
+      description: "12oz prime ribeye, herb butter, roasted bone marrow",
+      emoji: "🥩",
+      tags: [],
+    },
+    {
+      id: "M6",
+      name: "Lobster Linguine",
+      price: 42,
+      description: "Half Maine lobster, cherry tomato, white wine, basil",
+      emoji: "🦞",
+      tags: [],
+    },
   ],
   sides: [
-    { id: 'SI1', name: 'Truffle Fries', price: 10, description: 'Hand-cut, parmesan, rosemary, truffle oil', emoji: '🍟', tags: ['vegetarian'] },
-    { id: 'SI2', name: 'Roasted Broccolini', price: 9, description: 'Garlic, lemon zest, calabrian chili, almonds', emoji: '🥦', tags: ['vegan'] },
-    { id: 'SI3', name: 'Mac & Cheese', price: 11, description: 'Four cheese blend, breadcrumb crust, truffle', emoji: '🧀', tags: ['vegetarian'] },
-    { id: 'SI4', name: 'Wedge Salad', price: 12, description: 'Iceberg, blue cheese, bacon, heirloom tomato, chive', emoji: '🥗', tags: [] },
+    {
+      id: "SI1",
+      name: "Truffle Fries",
+      price: 10,
+      description: "Hand-cut, parmesan, rosemary, truffle oil",
+      emoji: "🍟",
+      tags: ["vegetarian"],
+    },
+    {
+      id: "SI2",
+      name: "Roasted Broccolini",
+      price: 9,
+      description: "Garlic, lemon zest, calabrian chili, almonds",
+      emoji: "🥦",
+      tags: ["vegan"],
+    },
+    {
+      id: "SI3",
+      name: "Mac & Cheese",
+      price: 11,
+      description: "Four cheese blend, breadcrumb crust, truffle",
+      emoji: "🧀",
+      tags: ["vegetarian"],
+    },
+    {
+      id: "SI4",
+      name: "Wedge Salad",
+      price: 12,
+      description: "Iceberg, blue cheese, bacon, heirloom tomato, chive",
+      emoji: "🥗",
+      tags: [],
+    },
   ],
   drinks: [
-    { id: 'D1', name: 'Sparkling Water', price: 4, description: 'Perrier, 500ml bottle', emoji: '💧', tags: ['vegan'] },
-    { id: 'D2', name: 'Still Water', price: 3, description: 'Evian, 500ml bottle', emoji: '🫗', tags: ['vegan'] },
-    { id: 'D3', name: 'Fresh Lemonade', price: 7, description: 'Housemade, lavender simple syrup, mint', emoji: '🍋', tags: ['vegan'] },
-    { id: 'D4', name: 'Craft Cola', price: 5, description: 'Mexican Coke, small batch', emoji: '🥤', tags: ['vegan'] },
-    { id: 'D5', name: 'Iced Matcha Latte', price: 8, description: 'Ceremonial grade, oat milk, vanilla', emoji: '🍵', tags: ['vegetarian'] },
-    { id: 'D6', name: 'Seasonal Mocktail', price: 10, description: 'Chef\'s rotating creation, non-alcoholic', emoji: '🍹', tags: ['vegan'] },
+    {
+      id: "D1",
+      name: "Sparkling Water",
+      price: 4,
+      description: "Perrier, 500ml bottle",
+      emoji: "💧",
+      tags: ["vegan"],
+    },
+    {
+      id: "D2",
+      name: "Still Water",
+      price: 3,
+      description: "Evian, 500ml bottle",
+      emoji: "🫗",
+      tags: ["vegan"],
+    },
+    {
+      id: "D3",
+      name: "Fresh Lemonade",
+      price: 7,
+      description: "Housemade, lavender simple syrup, mint",
+      emoji: "🍋",
+      tags: ["vegan"],
+    },
+    {
+      id: "D4",
+      name: "Craft Cola",
+      price: 5,
+      description: "Mexican Coke, small batch",
+      emoji: "🥤",
+      tags: ["vegan"],
+    },
+    {
+      id: "D5",
+      name: "Iced Matcha Latte",
+      price: 8,
+      description: "Ceremonial grade, oat milk, vanilla",
+      emoji: "🍵",
+      tags: ["vegetarian"],
+    },
+    {
+      id: "D6",
+      name: "Seasonal Mocktail",
+      price: 10,
+      description: "Chef's rotating creation, non-alcoholic",
+      emoji: "🍹",
+      tags: ["vegan"],
+    },
   ],
   desserts: [
-    { id: 'DE1', name: 'Crème Brûlée', price: 12, description: 'Classic vanilla, caramelized sugar crust', emoji: '🍮', tags: ['vegetarian'] },
-    { id: 'DE2', name: 'Chocolate Lava Cake', price: 14, description: 'Valrhona 70%, vanilla bean ice cream, sea salt', emoji: '🍫', tags: ['vegetarian'] },
-    { id: 'DE3', name: 'Seasonal Sorbet', price: 10, description: 'Three scoops, rotating flavors, fresh mint', emoji: '🍧', tags: ['vegan'] },
+    {
+      id: "DE1",
+      name: "Crème Brûlée",
+      price: 12,
+      description: "Classic vanilla, caramelized sugar crust",
+      emoji: "🍮",
+      tags: ["vegetarian"],
+    },
+    {
+      id: "DE2",
+      name: "Chocolate Lava Cake",
+      price: 14,
+      description: "Valrhona 70%, vanilla bean ice cream, sea salt",
+      emoji: "🍫",
+      tags: ["vegetarian"],
+    },
+    {
+      id: "DE3",
+      name: "Seasonal Sorbet",
+      price: 10,
+      description: "Three scoops, rotating flavors, fresh mint",
+      emoji: "🍧",
+      tags: ["vegan"],
+    },
   ],
 };
 
 const ALL_ITEMS = Object.values(MENU).flat();
 
 // ─── Menu Endpoint ────────────────────────────────────────────────────────────
-app.get('/api/menu', (req, res) => {
+app.get("/api/menu", (req, res) => {
   res.json({ success: true, menu: MENU });
 });
 
 // ─── AI Chat Endpoint ─────────────────────────────────────────────────────────
-app.post('/api/chat', async (req, res) => {
+app.post("/api/chat", async (req, res) => {
   const { message, cartItems = [], conversationHistory = [] } = req.body;
 
   if (!message) {
-    return res.status(400).json({ error: 'Message is required' });
+    return res.status(400).json({ error: "Message is required" });
   }
 
   // Build menu context for the AI
-  const menuContext = Object.entries(MENU).map(([category, items]) => {
-    const itemList = items.map(i => `  - ${i.name} (ID: ${i.id}) $${i.price} — ${i.description}`).join('\n');
-    return `${category.toUpperCase()}:\n${itemList}`;
-  }).join('\n\n');
+  const menuContext = Object.entries(MENU)
+    .map(([category, items]) => {
+      const itemList = items
+        .map(
+          (i) => `  - ${i.name} (ID: ${i.id}) $${i.price} — ${i.description}`,
+        )
+        .join("\n");
+      return `${category.toUpperCase()}:\n${itemList}`;
+    })
+    .join("\n\n");
 
-  const cartContext = cartItems.length > 0
-    ? cartItems.map(i => `${i.quantity}x ${i.name} ($${i.price} each)`).join(', ')
-    : 'empty';
+  const cartContext =
+    cartItems.length > 0
+      ? cartItems
+          .map((i) => `${i.quantity}x ${i.name} ($${i.price} each)`)
+          .join(", ")
+      : "empty";
 
   const systemPrompt = `You are a friendly, warm AI assistant for "The Intelligent Bistro", an upscale casual restaurant. You help guests browse the menu and manage their orders.
 
@@ -109,7 +279,7 @@ RULES:
   try {
     // Use Anthropic API with claude-haiku (free tier / most cost-effective)
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    
+
     if (!apiKey) {
       // Fallback: rule-based parsing if no API key
       const fallbackResponse = ruleBasedParser(message, cartItems);
@@ -118,18 +288,18 @@ RULES:
 
     const messages = [
       ...conversationHistory.slice(-6), // Keep last 3 turns for context
-      { role: 'user', content: message }
+      { role: "user", content: message },
     ];
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 1024,
         system: systemPrompt,
         messages,
@@ -138,13 +308,13 @@ RULES:
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error('Anthropic API error:', errText);
+      console.error("Anthropic API error:", errText);
       const fallbackResponse = ruleBasedParser(message, cartItems);
       return res.json(fallbackResponse);
     }
 
     const data = await response.json();
-    const rawText = data.content[0]?.text || '{}';
+    const rawText = data.content[0]?.text || "{}";
 
     let parsed;
     try {
@@ -152,13 +322,14 @@ RULES:
     } catch {
       // Try to extract JSON from the response
       const match = rawText.match(/\{[\s\S]*\}/);
-      parsed = match ? JSON.parse(match[0]) : { message: rawText, actions: [], suggestions: [] };
+      parsed = match
+        ? JSON.parse(match[0])
+        : { message: rawText, actions: [], suggestions: [] };
     }
 
     res.json({ success: true, ...parsed });
-
   } catch (error) {
-    console.error('Chat error:', error);
+    console.error("Chat error:", error);
     const fallbackResponse = ruleBasedParser(message, cartItems);
     res.json(fallbackResponse);
   }
@@ -168,47 +339,84 @@ RULES:
 function ruleBasedParser(message, cartItems) {
   const lower = message.toLowerCase();
   const actions = [];
-  let responseMsg = '';
+  let responseMsg = "";
   let suggestions = [];
 
   // Number word mapping
-  const numberWords = { 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'a ': 1, 'an ': 1 };
+  const numberWords = {
+    one: 1,
+    two: 2,
+    three: 3,
+    four: 4,
+    five: 5,
+    "a ": 1,
+    "an ": 1,
+  };
 
   // Check for clear cart
-  if (lower.includes('clear') || lower.includes('start over') || lower.includes('empty cart')) {
-    actions.push({ type: 'CLEAR_CART' });
+  if (
+    lower.includes("clear") ||
+    lower.includes("start over") ||
+    lower.includes("empty cart")
+  ) {
+    actions.push({ type: "CLEAR_CART" });
     responseMsg = "Done! I've cleared your cart. What would you like to order?";
-    suggestions = ['See the menu', 'Today\'s specials', 'Quick order'];
+    suggestions = ["See the menu", "Today's specials", "Quick order"];
     return { success: true, message: responseMsg, actions, suggestions };
   }
 
   // Check for remove
-  if (lower.includes('remove') || lower.includes('take off') || lower.includes('don\'t want')) {
+  if (
+    lower.includes("remove") ||
+    lower.includes("take off") ||
+    lower.includes("don't want")
+  ) {
     for (const item of ALL_ITEMS) {
       if (lower.includes(item.name.toLowerCase())) {
-        actions.push({ type: 'REMOVE_ITEM', itemId: item.id });
+        actions.push({ type: "REMOVE_ITEM", itemId: item.id });
         responseMsg = `Removed ${item.name} from your cart!`;
       }
     }
   }
 
   // Check for add
-  const addPatterns = ['add', 'get', 'order', 'want', 'have', 'give me', 'i\'ll take', 'can i get'];
-  const isAdding = addPatterns.some(p => lower.includes(p));
+  const addPatterns = [
+    "add",
+    "get",
+    "order",
+    "want",
+    "have",
+    "give me",
+    "i'll take",
+    "can i get",
+  ];
+  const isAdding = addPatterns.some((p) => lower.includes(p));
 
   if (isAdding || actions.length === 0) {
     for (const item of ALL_ITEMS) {
-      if (lower.includes(item.name.toLowerCase()) || 
-          lower.includes(item.name.toLowerCase().split(' ')[0])) {
+      if (
+        lower.includes(item.name.toLowerCase()) ||
+        lower.includes(item.name.toLowerCase().split(" ")[0])
+      ) {
         // Try to detect quantity
         let qty = 1;
         for (const [word, num] of Object.entries(numberWords)) {
-          if (lower.includes(word)) { qty = num; break; }
+          if (lower.includes(word)) {
+            qty = num;
+            break;
+          }
         }
-        const numMatch = lower.match(/(\d+)\s*x?\s*${item.name.toLowerCase().split(' ')[0]}/);
+        const numMatch = lower.match(
+          /(\d+)\s*x?\s*${item.name.toLowerCase().split(' ')[0]}/,
+        );
         if (numMatch) qty = parseInt(numMatch[1]);
-        
-        actions.push({ type: 'ADD_ITEM', itemId: item.id, quantity: qty, name: item.name });
+
+        actions.push({
+          type: "ADD_ITEM",
+          itemId: item.id,
+          quantity: qty,
+          name: item.name,
+        });
         responseMsg += `Added ${qty}x ${item.name} to your cart! `;
       }
     }
@@ -216,29 +424,42 @@ function ruleBasedParser(message, cartItems) {
 
   if (actions.length === 0) {
     // Menu browsing / general help
-    if (lower.includes('menu') || lower.includes('what')) {
-      responseMsg = "We have starters, mains, sides, drinks, and desserts. What are you in the mood for? 😊";
-      suggestions = ['Show starters', 'Show mains', 'Something spicy'];
-    } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
-      responseMsg = "Welcome to The Intelligent Bistro! 🍽️ I'm here to help you order. What are you hungry for?";
-      suggestions = ['See full menu', 'What\'s popular?', 'Vegetarian options'];
-    } else if (lower.includes('vegetarian') || lower.includes('vegan')) {
-      const vegItems = ALL_ITEMS.filter(i => i.tags.includes('vegetarian') || i.tags.includes('vegan'));
-      responseMsg = `Great choices for you! We have: ${vegItems.map(i => i.name).join(', ')}. Which sounds good?`;
+    if (lower.includes("menu") || lower.includes("what")) {
+      responseMsg =
+        "We have starters, mains, sides, drinks, and desserts. What are you in the mood for? 😊";
+      suggestions = ["Show starters", "Show mains", "Something spicy"];
+    } else if (
+      lower.includes("hello") ||
+      lower.includes("hi") ||
+      lower.includes("hey")
+    ) {
+      responseMsg =
+        "Welcome to The Intelligent Bistro! 🍽️ I'm here to help you order. What are you hungry for?";
+      suggestions = ["See full menu", "What's popular?", "Vegetarian options"];
+    } else if (lower.includes("vegetarian") || lower.includes("vegan")) {
+      const vegItems = ALL_ITEMS.filter(
+        (i) => i.tags.includes("vegetarian") || i.tags.includes("vegan"),
+      );
+      responseMsg = `Great choices for you! We have: ${vegItems.map((i) => i.name).join(", ")}. Which sounds good?`;
     } else {
-      responseMsg = "I'd be happy to help! You can ask me to add items, remove things from your cart, or tell you about our menu. What sounds good?";
-      suggestions = ['What\'s popular?', 'Show me mains', 'Add fries'];
+      responseMsg =
+        "I'd be happy to help! You can ask me to add items, remove things from your cart, or tell you about our menu. What sounds good?";
+      suggestions = ["What's popular?", "Show me mains", "Add fries"];
     }
   } else {
-    responseMsg = responseMsg.trim() + ' Anything else?';
-    suggestions = ['Add a drink', 'See desserts', 'View my cart'];
+    responseMsg = responseMsg.trim() + " Anything else?";
+    suggestions = ["Add a drink", "See desserts", "View my cart"];
   }
 
   return { success: true, message: responseMsg, actions, suggestions };
 }
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
-app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
+app.get("/health", (req, res) =>
+  res.json({ status: "ok", timestamp: new Date() }),
+);
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`🍽️  Bistro backend running on port ${PORT}`));
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🍽️ Bistro backend running on port ${PORT}`);
+});
