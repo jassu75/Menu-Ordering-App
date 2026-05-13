@@ -1,12 +1,15 @@
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import Groq from "groq-sdk";
 import menu from "./data/menu.json" with { type: "json" };
 
 dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // ─── Menu Data ───────────────────────────────────────────────────────────────
 
@@ -25,12 +28,12 @@ app.post("/api/chat", async (req, res) => {
     return res.status(400).json({ error: "Message is required" });
   }
 
-  // Build menu context for the AI
   const menuContext = Object.entries(menu)
     .map(([category, items]) => {
       const itemList = items
         .map(
-          (i) => `  - ${i.name} (ID: ${i.id}) $${i.price} — ${i.description}`,
+          (i) =>
+            `  - [ID:${i.id}] "${i.name}" | $${i.price} | ${i.description}`,
         )
         .join("\n");
       return `${category.toUpperCase()}:\n${itemList}`;
@@ -44,100 +47,130 @@ app.post("/api/chat", async (req, res) => {
           .join(", ")
       : "empty";
 
-  const systemPrompt = `You are a friendly, warm AI assistant for "The Intelligent Bistro", an upscale casual restaurant. You help guests browse the menu and manage their orders.
+  const systemPrompt = `You are Maya, a warm and witty AI server at "The Intelligent Bistro".
 
-CURRENT MENU:
+MENU (copy IDs and names EXACTLY — do not invent or change them):
 ${menuContext}
 
-CURRENT CART: ${cartContext}
+GUEST'S CART: ${cartContext}
 
-YOUR ROLE:
-- Help guests discover menu items and make decisions
-- Process order requests and return structured cart actions
-- Be conversational, warm, and slightly witty
-- Upsell naturally when appropriate (e.g., suggest a drink with a meal)
-- Handle modifications like quantity changes and removals
+━━━ REAL EXAMPLES — follow these exactly ━━━
 
-RESPONSE FORMAT:
-Always respond with a JSON object (no markdown, no code blocks, raw JSON only) with this structure:
-{
-  "message": "Your friendly conversational response to the guest",
-  "actions": [
-    {
-      "type": "ADD_ITEM" | "REMOVE_ITEM" | "UPDATE_QUANTITY" | "CLEAR_CART",
-      "itemId": "item ID from menu",
-      "quantity": number (for ADD_ITEM and UPDATE_QUANTITY),
-      "name": "item name (for ADD_ITEM)"
-    }
-  ],
-  "suggestions": ["optional array of 1-3 short follow-up suggestion chips"]
-}
+Guest: "add fries" or "fries please"
+→ {"message":"Truffle fries on the way! 🍟 Fancy a drink to go with?","actions":[{"type":"ADD_ITEM","itemId":"SI1","quantity":1,"name":"Truffle Fries"}],"suggestions":["Add a drink","Add a burger","View cart"]}
 
-RULES:
-- actions array can be empty [] if no cart changes needed
-- For ADD_ITEM, always include itemId, quantity, and name
-- For REMOVE_ITEM, include itemId
-- For UPDATE_QUANTITY, include itemId and new quantity (0 means remove)
-- Match items by name flexibly (e.g., "spicy chicken" = "Spicy Chicken Sandwich")
-- Keep message under 100 words, friendly and conversational
-- suggestions should be short (under 5 words each)`;
+Guest: "i want a burger"
+→ {"message":"One Wagyu Burger coming up! 🍔 Want truffle fries on the side?","actions":[{"type":"ADD_ITEM","itemId":"M1","quantity":1,"name":"Wagyu Burger"}],"suggestions":["Add Truffle Fries","Add a drink","View cart"]}
+
+Guest: "get me a lemonade"
+→ {"message":"Fresh lemonade coming right up! 🍋","actions":[{"type":"ADD_ITEM","itemId":"D3","quantity":1,"name":"Fresh Lemonade"}],"suggestions":["Add a main","See desserts","View cart"]}
+
+Guest: "remove the fries"
+→ {"message":"Truffle fries removed, no problem!","actions":[{"type":"REMOVE_ITEM","itemId":"SI1"}],"suggestions":["Add something else","View cart","See mains"]}
+
+Guest: "clear my cart"
+→ {"message":"Cart cleared! Fresh start — what are you feeling?","actions":[{"type":"CLEAR_CART"}],"suggestions":["See full menu","What's popular?","Quick order"]}
+
+Guest: "what's good here?"
+→ {"message":"The Wagyu Burger and Truffle Fries are guest favorites! The Ribeye is incredible if you're feeling fancy 🥩","actions":[],"suggestions":["Add Wagyu Burger","Add Ribeye Steak","See full menu"]}
+
+━━━ ALIAS MAP ━━━
+fries → SI1 "Truffle Fries"
+burger → M1 "Wagyu Burger"
+chicken → M2 "Spicy Chicken Sandwich"
+salmon → M3 "Seared Salmon"
+risotto → M4 "Wild Mushroom Risotto"
+steak → M5 "Ribeye Steak"
+lobster → M6 "Lobster Linguine"
+arancini → S1 "Truffle Arancini"
+tuna → S2 "Tuna Tataki"
+burrata → S3 "Burrata Board"
+calamari → S4 "Crispy Calamari"
+broccolini → SI2 "Roasted Broccolini"
+mac and cheese → SI3 "Mac & Cheese"
+salad → SI4 "Wedge Salad"
+sparkling water → D1 "Sparkling Water"
+still water → D2 "Still Water"
+lemonade → D3 "Fresh Lemonade"
+cola → D4 "Craft Cola"
+matcha → D5 "Iced Matcha Latte"
+mocktail → D6 "Seasonal Mocktail"
+creme brulee → DE1 "Crème Brûlée"
+lava cake → DE2 "Chocolate Lava Cake"
+sorbet → DE3 "Seasonal Sorbet"
+
+━━━ RULES ━━━
+- Return ONLY raw JSON, no markdown, no backticks, no explanation
+- itemId MUST match exactly from the alias map or menu above
+- name MUST be copied exactly from the menu
+- Keep message under 20 words, warm and human
+- Never invent item IDs`;
 
   try {
-    // Use Anthropic API with claude-haiku (free tier / most cost-effective)
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-
-    if (!apiKey) {
-      // Fallback: rule-based parsing if no API key
-      const fallbackResponse = ruleBasedParser(message, cartItems);
-      return res.json(fallbackResponse);
+    if (!process.env.GROQ_API_KEY) {
+      return res.json(ruleBasedParser(message, cartItems));
     }
 
     const messages = [
-      ...conversationHistory.slice(-6), // Keep last 3 turns for context
+      { role: "system", content: systemPrompt },
+      ...conversationHistory.slice(-6).map((m) => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: m.content,
+      })),
       { role: "user", content: message },
     ];
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages,
-      }),
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages,
+      temperature: 0.5,
+      max_tokens: 512,
+      response_format: { type: "json_object" }, // forces valid JSON
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Anthropic API error:", errText);
-      const fallbackResponse = ruleBasedParser(message, cartItems);
-      return res.json(fallbackResponse);
-    }
-
-    const data = await response.json();
-    const rawText = data.content[0]?.text || "{}";
+    const rawText = completion.choices[0]?.message?.content || "{}";
+    console.log("Groq raw response:", rawText);
 
     let parsed;
     try {
       parsed = JSON.parse(rawText);
     } catch {
-      // Try to extract JSON from the response
       const match = rawText.match(/\{[\s\S]*\}/);
       parsed = match
         ? JSON.parse(match[0])
         : { message: rawText, actions: [], suggestions: [] };
     }
 
+    // Server-side safety net: fix wrong IDs by name
+    if (parsed.actions) {
+      parsed.actions = parsed.actions.map((action) => {
+        if (
+          ["ADD_ITEM", "REMOVE_ITEM", "UPDATE_QUANTITY"].includes(action.type)
+        ) {
+          const exactMatch = menu_items.find((i) => i.id === action.itemId);
+          if (!exactMatch && action.name) {
+            const nameMatch = menu_items.find(
+              (i) =>
+                i.name.toLowerCase() === action.name.toLowerCase() ||
+                i.name.toLowerCase().includes(action.name.toLowerCase()) ||
+                action.name.toLowerCase().includes(i.name.toLowerCase()),
+            );
+            if (nameMatch) {
+              console.log(
+                `Fixed: "${action.itemId}" → "${nameMatch.id}" (${nameMatch.name})`,
+              );
+              return { ...action, itemId: nameMatch.id, name: nameMatch.name };
+            }
+          }
+        }
+        return action;
+      });
+    }
+
     res.json({ success: true, ...parsed });
   } catch (error) {
-    console.error("Chat error:", error);
-    const fallbackResponse = ruleBasedParser(message, cartItems);
-    res.json(fallbackResponse);
+    console.error("Groq error:", error.message);
+    res.json(ruleBasedParser(message, cartItems));
   }
 });
 
@@ -148,7 +181,6 @@ function ruleBasedParser(message, cartItems) {
   let responseMsg = "";
   let suggestions = [];
 
-  // Number word mapping
   const numberWords = {
     one: 1,
     two: 2,
@@ -159,19 +191,17 @@ function ruleBasedParser(message, cartItems) {
     "an ": 1,
   };
 
-  // Check for clear cart
   if (
     lower.includes("clear") ||
     lower.includes("start over") ||
     lower.includes("empty cart")
   ) {
     actions.push({ type: "CLEAR_CART" });
-    responseMsg = "Done! I've cleared your cart. What would you like to order?";
+    responseMsg = "Done! Cart cleared. What would you like to order?";
     suggestions = ["See the menu", "Today's specials", "Quick order"];
     return { success: true, message: responseMsg, actions, suggestions };
   }
 
-  // Check for remove
   if (
     lower.includes("remove") ||
     lower.includes("take off") ||
@@ -185,7 +215,6 @@ function ruleBasedParser(message, cartItems) {
     }
   }
 
-  // Check for add
   const addPatterns = [
     "add",
     "get",
@@ -204,7 +233,6 @@ function ruleBasedParser(message, cartItems) {
         lower.includes(item.name.toLowerCase()) ||
         lower.includes(item.name.toLowerCase().split(" ")[0])
       ) {
-        // Try to detect quantity
         let qty = 1;
         for (const [word, num] of Object.entries(numberWords)) {
           if (lower.includes(word)) {
@@ -212,11 +240,6 @@ function ruleBasedParser(message, cartItems) {
             break;
           }
         }
-        const numMatch = lower.match(
-          /(\d+)\s*x?\s*${item.name.toLowerCase().split(' ')[0]}/,
-        );
-        if (numMatch) qty = parseInt(numMatch[1]);
-
         actions.push({
           type: "ADD_ITEM",
           itemId: item.id,
@@ -229,7 +252,6 @@ function ruleBasedParser(message, cartItems) {
   }
 
   if (actions.length === 0) {
-    // Menu browsing / general help
     if (lower.includes("menu") || lower.includes("what")) {
       responseMsg =
         "We have starters, mains, sides, drinks, and desserts. What are you in the mood for? 😊";
@@ -240,16 +262,16 @@ function ruleBasedParser(message, cartItems) {
       lower.includes("hey")
     ) {
       responseMsg =
-        "Welcome to The Intelligent Bistro! 🍽️ I'm here to help you order. What are you hungry for?";
+        "Welcome to The Intelligent Bistro! 🍽️ What are you hungry for?";
       suggestions = ["See full menu", "What's popular?", "Vegetarian options"];
     } else if (lower.includes("vegetarian") || lower.includes("vegan")) {
       const vegItems = menu_items.filter(
-        (i) => i.tags.includes("vegetarian") || i.tags.includes("vegan"),
+        (i) => i.tags?.includes("vegetarian") || i.tags?.includes("vegan"),
       );
-      responseMsg = `Great choices for you! We have: ${vegItems.map((i) => i.name).join(", ")}. Which sounds good?`;
+      responseMsg = `Great choices! We have: ${vegItems.map((i) => i.name).join(", ")}. Which sounds good?`;
     } else {
       responseMsg =
-        "I'd be happy to help! You can ask me to add items, remove things from your cart, or tell you about our menu. What sounds good?";
+        "Ask me to add items, remove things, or tell you about our menu!";
       suggestions = ["What's popular?", "Show me mains", "Add fries"];
     }
   } else {

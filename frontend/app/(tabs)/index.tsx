@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,34 +9,44 @@ import {
   ActivityIndicator,
   Animated,
   Platform,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useBistroStore, MenuItem } from '../../store/bistroStore';
-import { Colors, Fonts, Spacing, Radii, API_URL } from '../../constants/design';
-import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useBistroStore, MenuItem } from "../../store/bistroStore";
+import { Colors, Fonts, Spacing, Radii } from "../../constants/design";
+import { API_URL } from "@/constants/config";
+import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
 
 const CATEGORIES = [
-  { key: 'starters', label: 'Starters', icon: '🥗' },
-  { key: 'mains', label: 'Mains', icon: '🍽️' },
-  { key: 'sides', label: 'Sides', icon: '🍟' },
-  { key: 'drinks', label: 'Drinks', icon: '🥤' },
-  { key: 'desserts', label: 'Desserts', icon: '🍮' },
+  { key: "starters", label: "Starters", icon: "🥗" },
+  { key: "mains", label: "Mains", icon: "🍽️" },
+  { key: "sides", label: "Sides", icon: "🍟" },
+  { key: "drinks", label: "Drinks", icon: "🥤" },
+  { key: "desserts", label: "Desserts", icon: "🍮" },
 ];
 
 function MenuItemCard({ item, onAdd }: { item: MenuItem; onAdd: () => void }) {
-  const cartItems = useBistroStore(s => s.cartItems);
-  const cartItem = cartItems.find(i => i.id === item.id);
+  const cartItems = useBistroStore((s) => s.cartItems);
+  const cartItem = cartItems.find((i) => i.id === item.id);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePress = () => {
     Animated.sequence([
-      Animated.timing(scaleAnim, { toValue: 0.94, duration: 80, useNativeDriver: true }),
-      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, bounciness: 6 }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.94,
+        duration: 80,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        bounciness: 6,
+      }),
     ]).start();
-    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== "web")
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onAdd();
   };
 
@@ -48,16 +58,29 @@ function MenuItemCard({ item, onAdd }: { item: MenuItem; onAdd: () => void }) {
         </View>
         <View style={styles.cardInfo}>
           <View style={styles.cardHeader}>
-            <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+            <Text style={styles.itemName} numberOfLines={1}>
+              {item.name}
+            </Text>
             <Text style={styles.itemPrice}>${item.price}</Text>
           </View>
-          <Text style={styles.itemDesc} numberOfLines={2}>{item.description}</Text>
+          <Text style={styles.itemDesc} numberOfLines={2}>
+            {item.description}
+          </Text>
           {item.tags.length > 0 && (
             <View style={styles.tags}>
-              {item.tags.map(tag => (
-                <View key={tag} style={[styles.tag, tag === 'spicy' && styles.tagSpicy]}>
-                  <Text style={[styles.tagText, tag === 'spicy' && styles.tagTextSpicy]}>
-                    {tag === 'spicy' ? '🌶️ ' : tag === 'vegan' ? '🌱 ' : '🥬 '}{tag}
+              {item.tags.map((tag) => (
+                <View
+                  key={tag}
+                  style={[styles.tag, tag === "spicy" && styles.tagSpicy]}
+                >
+                  <Text
+                    style={[
+                      styles.tagText,
+                      tag === "spicy" && styles.tagTextSpicy,
+                    ]}
+                  >
+                    {tag === "spicy" ? "🌶️ " : tag === "vegan" ? "🌱 " : "🥬 "}
+                    {tag}
                   </Text>
                 </View>
               ))}
@@ -82,14 +105,19 @@ function MenuItemCard({ item, onAdd }: { item: MenuItem; onAdd: () => void }) {
 }
 
 export default function MenuScreen() {
-  const { menu, setMenu, activeCategory, setActiveCategory, addItem } = useBistroStore();
+  const { menu, setMenu, activeCategory, setActiveCategory, addItem } =
+    useBistroStore();
   const [loading, setLoading] = React.useState(true);
   const router = useRouter();
   const headerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     fetchMenu();
-    Animated.timing(headerAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+    Animated.timing(headerAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
   }, []);
 
   const fetchMenu = async () => {
@@ -99,12 +127,15 @@ export default function MenuScreen() {
       if (data.menu) {
         const menuWithCategory: Record<string, MenuItem[]> = {};
         Object.entries(data.menu).forEach(([cat, items]) => {
-          menuWithCategory[cat] = (items as MenuItem[]).map(i => ({ ...i, category: cat }));
+          menuWithCategory[cat] = (items as MenuItem[]).map((i) => ({
+            ...i,
+            category: cat,
+          }));
         });
         setMenu(menuWithCategory);
       }
     } catch (e) {
-      console.warn('Could not fetch menu, using embedded fallback');
+      console.warn("Could not fetch menu, using embedded fallback");
       // Menu fetch failed - items still visible via fallback
     } finally {
       setLoading(false);
@@ -116,15 +147,15 @@ export default function MenuScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <SafeAreaView edges={['top']}>
+      <SafeAreaView edges={["top"]}>
         <Animated.View style={[styles.header, { opacity: headerAnim }]}>
           <View>
             <Text style={styles.headerSub}>Welcome to</Text>
-            <Text style={styles.headerTitle}>The Intelligent{'\n'}Bistro</Text>
+            <Text style={styles.headerTitle}>The Intelligent{"\n"}Bistro</Text>
           </View>
           <TouchableOpacity
             style={styles.aiBtn}
-            onPress={() => router.push('/chat')}
+            onPress={() => router.push("/chat")}
             activeOpacity={0.8}
           >
             <LinearGradient
@@ -149,15 +180,23 @@ export default function MenuScreen() {
         style={styles.catScroll}
         contentContainerStyle={styles.catContent}
       >
-        {CATEGORIES.map(cat => (
+        {CATEGORIES.map((cat) => (
           <TouchableOpacity
             key={cat.key}
-            style={[styles.catTab, activeCategory === cat.key && styles.catTabActive]}
+            style={[
+              styles.catTab,
+              activeCategory === cat.key && styles.catTabActive,
+            ]}
             onPress={() => setActiveCategory(cat.key)}
             activeOpacity={0.7}
           >
             <Text style={styles.catIcon}>{cat.icon}</Text>
-            <Text style={[styles.catLabel, activeCategory === cat.key && styles.catLabelActive]}>
+            <Text
+              style={[
+                styles.catLabel,
+                activeCategory === cat.key && styles.catLabelActive,
+              ]}
+            >
               {cat.label}
             </Text>
           </TouchableOpacity>
@@ -173,26 +212,25 @@ export default function MenuScreen() {
       ) : (
         <FlatList
           data={currentItems}
-          keyExtractor={i => i.id}
+          keyExtractor={(i) => i.id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           ListHeaderComponent={
             <Text style={styles.sectionTitle}>
-              {CATEGORIES.find(c => c.key === activeCategory)?.icon}{' '}
-              {CATEGORIES.find(c => c.key === activeCategory)?.label}
-              <Text style={styles.itemCount}>  {currentItems.length} items</Text>
+              {CATEGORIES.find((c) => c.key === activeCategory)?.icon}{" "}
+              {CATEGORIES.find((c) => c.key === activeCategory)?.label}
+              <Text style={styles.itemCount}> {currentItems.length} items</Text>
             </Text>
           }
           renderItem={({ item }) => (
-            <MenuItemCard
-              item={item}
-              onAdd={() => addItem(item)}
-            />
+            <MenuItemCard item={item} onAdd={() => addItem(item)} />
           )}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyText}>No items in this category yet.</Text>
+              <Text style={styles.emptyText}>
+                No items in this category yet.
+              </Text>
             </View>
           }
         />
@@ -207,9 +245,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.md,
@@ -228,13 +266,13 @@ const styles = StyleSheet.create({
   },
   aiBtn: {
     borderRadius: Radii.full,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   aiBtnGrad: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: Radii.full,
-    alignItems: 'center',
+    alignItems: "center",
   },
   aiBtnText: {
     fontFamily: Fonts.bodyBold,
@@ -256,8 +294,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   catTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -302,12 +340,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.borderSubtle,
     padding: Spacing.md,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
   },
   cardContent: {
-    flexDirection: 'row',
+    flexDirection: "row",
     flex: 1,
     gap: 12,
   },
@@ -316,8 +354,8 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: Radii.md,
     backgroundColor: Colors.bgElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   emoji: {
     fontSize: 26,
@@ -327,9 +365,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   itemName: {
     fontFamily: Fonts.displayMedium,
@@ -350,25 +388,25 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   tags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 4,
     marginTop: 2,
   },
   tag: {
-    backgroundColor: 'rgba(76, 175, 125, 0.1)',
+    backgroundColor: "rgba(76, 175, 125, 0.1)",
     borderRadius: Radii.full,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
   tagSpicy: {
-    backgroundColor: 'rgba(232, 93, 58, 0.1)',
+    backgroundColor: "rgba(232, 93, 58, 0.1)",
   },
   tagText: {
     fontFamily: Fonts.body,
     fontSize: 10,
     color: Colors.success,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   tagTextSpicy: {
     color: Colors.spicy,
@@ -378,8 +416,8 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: Radii.full,
     backgroundColor: Colors.gold,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginLeft: 8,
     marginTop: 2,
   },
@@ -393,8 +431,8 @@ const styles = StyleSheet.create({
   },
   loader: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: 12,
   },
   loaderText: {
@@ -403,7 +441,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   empty: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: Spacing.xl,
   },
   emptyText: {
