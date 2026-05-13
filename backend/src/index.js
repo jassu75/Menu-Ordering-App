@@ -1,214 +1,20 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
+import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
+import menu from "./data/menu.json" with { type: "json" };
 
+dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // ─── Menu Data ───────────────────────────────────────────────────────────────
-const MENU = {
-  starters: [
-    {
-      id: "S1",
-      name: "Truffle Arancini",
-      price: 14,
-      description: "Crispy risotto balls with black truffle and fontina",
-      emoji: "🍚",
-      tags: ["vegetarian"],
-    },
-    {
-      id: "S2",
-      name: "Tuna Tataki",
-      price: 18,
-      description: "Seared yellowfin, ponzu, micro greens, sesame",
-      emoji: "🐟",
-      tags: [],
-    },
-    {
-      id: "S3",
-      name: "Burrata Board",
-      price: 16,
-      description: "Fresh burrata, heirloom tomatoes, basil oil, sea salt",
-      emoji: "🧀",
-      tags: ["vegetarian"],
-    },
-    {
-      id: "S4",
-      name: "Crispy Calamari",
-      price: 15,
-      description: "Lemon aioli, marinara, fresh herbs",
-      emoji: "🦑",
-      tags: [],
-    },
-  ],
-  mains: [
-    {
-      id: "M1",
-      name: "Wagyu Burger",
-      price: 28,
-      description: "A5 wagyu blend, aged cheddar, truffle mayo, brioche bun",
-      emoji: "🍔",
-      tags: [],
-    },
-    {
-      id: "M2",
-      name: "Spicy Chicken Sandwich",
-      price: 22,
-      description: "Nashville hot, pickled slaw, comeback sauce, potato roll",
-      emoji: "🍗",
-      tags: ["spicy"],
-    },
-    {
-      id: "M3",
-      name: "Seared Salmon",
-      price: 32,
-      description: "Miso glaze, bok choy, jasmine rice, ginger beurre blanc",
-      emoji: "🐠",
-      tags: [],
-    },
-    {
-      id: "M4",
-      name: "Wild Mushroom Risotto",
-      price: 24,
-      description: "Arborio, porcini, parmesan, truffle oil, fresh herbs",
-      emoji: "🍄",
-      tags: ["vegetarian"],
-    },
-    {
-      id: "M5",
-      name: "Ribeye Steak",
-      price: 52,
-      description: "12oz prime ribeye, herb butter, roasted bone marrow",
-      emoji: "🥩",
-      tags: [],
-    },
-    {
-      id: "M6",
-      name: "Lobster Linguine",
-      price: 42,
-      description: "Half Maine lobster, cherry tomato, white wine, basil",
-      emoji: "🦞",
-      tags: [],
-    },
-  ],
-  sides: [
-    {
-      id: "SI1",
-      name: "Truffle Fries",
-      price: 10,
-      description: "Hand-cut, parmesan, rosemary, truffle oil",
-      emoji: "🍟",
-      tags: ["vegetarian"],
-    },
-    {
-      id: "SI2",
-      name: "Roasted Broccolini",
-      price: 9,
-      description: "Garlic, lemon zest, calabrian chili, almonds",
-      emoji: "🥦",
-      tags: ["vegan"],
-    },
-    {
-      id: "SI3",
-      name: "Mac & Cheese",
-      price: 11,
-      description: "Four cheese blend, breadcrumb crust, truffle",
-      emoji: "🧀",
-      tags: ["vegetarian"],
-    },
-    {
-      id: "SI4",
-      name: "Wedge Salad",
-      price: 12,
-      description: "Iceberg, blue cheese, bacon, heirloom tomato, chive",
-      emoji: "🥗",
-      tags: [],
-    },
-  ],
-  drinks: [
-    {
-      id: "D1",
-      name: "Sparkling Water",
-      price: 4,
-      description: "Perrier, 500ml bottle",
-      emoji: "💧",
-      tags: ["vegan"],
-    },
-    {
-      id: "D2",
-      name: "Still Water",
-      price: 3,
-      description: "Evian, 500ml bottle",
-      emoji: "🫗",
-      tags: ["vegan"],
-    },
-    {
-      id: "D3",
-      name: "Fresh Lemonade",
-      price: 7,
-      description: "Housemade, lavender simple syrup, mint",
-      emoji: "🍋",
-      tags: ["vegan"],
-    },
-    {
-      id: "D4",
-      name: "Craft Cola",
-      price: 5,
-      description: "Mexican Coke, small batch",
-      emoji: "🥤",
-      tags: ["vegan"],
-    },
-    {
-      id: "D5",
-      name: "Iced Matcha Latte",
-      price: 8,
-      description: "Ceremonial grade, oat milk, vanilla",
-      emoji: "🍵",
-      tags: ["vegetarian"],
-    },
-    {
-      id: "D6",
-      name: "Seasonal Mocktail",
-      price: 10,
-      description: "Chef's rotating creation, non-alcoholic",
-      emoji: "🍹",
-      tags: ["vegan"],
-    },
-  ],
-  desserts: [
-    {
-      id: "DE1",
-      name: "Crème Brûlée",
-      price: 12,
-      description: "Classic vanilla, caramelized sugar crust",
-      emoji: "🍮",
-      tags: ["vegetarian"],
-    },
-    {
-      id: "DE2",
-      name: "Chocolate Lava Cake",
-      price: 14,
-      description: "Valrhona 70%, vanilla bean ice cream, sea salt",
-      emoji: "🍫",
-      tags: ["vegetarian"],
-    },
-    {
-      id: "DE3",
-      name: "Seasonal Sorbet",
-      price: 10,
-      description: "Three scoops, rotating flavors, fresh mint",
-      emoji: "🍧",
-      tags: ["vegan"],
-    },
-  ],
-};
 
-const ALL_ITEMS = Object.values(MENU).flat();
+const menu_items = Object.values(menu).flat();
 
 // ─── Menu Endpoint ────────────────────────────────────────────────────────────
 app.get("/api/menu", (req, res) => {
-  res.json({ success: true, menu: MENU });
+  res.json({ success: true, menu: menu });
 });
 
 // ─── AI Chat Endpoint ─────────────────────────────────────────────────────────
@@ -220,7 +26,7 @@ app.post("/api/chat", async (req, res) => {
   }
 
   // Build menu context for the AI
-  const menuContext = Object.entries(MENU)
+  const menuContext = Object.entries(menu)
     .map(([category, items]) => {
       const itemList = items
         .map(
@@ -371,7 +177,7 @@ function ruleBasedParser(message, cartItems) {
     lower.includes("take off") ||
     lower.includes("don't want")
   ) {
-    for (const item of ALL_ITEMS) {
+    for (const item of menu_items) {
       if (lower.includes(item.name.toLowerCase())) {
         actions.push({ type: "REMOVE_ITEM", itemId: item.id });
         responseMsg = `Removed ${item.name} from your cart!`;
@@ -393,7 +199,7 @@ function ruleBasedParser(message, cartItems) {
   const isAdding = addPatterns.some((p) => lower.includes(p));
 
   if (isAdding || actions.length === 0) {
-    for (const item of ALL_ITEMS) {
+    for (const item of menu_items) {
       if (
         lower.includes(item.name.toLowerCase()) ||
         lower.includes(item.name.toLowerCase().split(" ")[0])
@@ -437,7 +243,7 @@ function ruleBasedParser(message, cartItems) {
         "Welcome to The Intelligent Bistro! 🍽️ I'm here to help you order. What are you hungry for?";
       suggestions = ["See full menu", "What's popular?", "Vegetarian options"];
     } else if (lower.includes("vegetarian") || lower.includes("vegan")) {
-      const vegItems = ALL_ITEMS.filter(
+      const vegItems = menu_items.filter(
         (i) => i.tags.includes("vegetarian") || i.tags.includes("vegan"),
       );
       responseMsg = `Great choices for you! We have: ${vegItems.map((i) => i.name).join(", ")}. Which sounds good?`;
