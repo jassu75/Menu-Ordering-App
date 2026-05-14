@@ -1,4 +1,4 @@
-# 🍽️ Intelligent Bistro — AI Menu Ordering App
+# 🍽️ Intelligent Bistro
 
 AI-powered food ordering application built with React Native and TypeScript. Users can browse menu items, chat with an AI assistant for recommendations, manage their cart, and complete secure payments using Stripe.
 
