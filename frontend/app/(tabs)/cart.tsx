@@ -17,9 +17,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useStripe } from "../../mocks/stripe-react-native";
-
-// ─── Config ───────────────────────────────────────────────────────────────────
-const API_BASE = "http://localhost:3001";
+import { API_URL } from "@/constants/config";
 
 // ─── CartRow ──────────────────────────────────────────────────────────────────
 
@@ -125,7 +123,7 @@ export default function CartScreen() {
   const tip = subtotal * 0.18;
   const total = subtotal + tax + tip;
 
-  // ─── Handle Stripe redirect back from hosted checkout (web only) ────────────
+  // ─── Stripe web ────────────
 
   React.useEffect(() => {
     if (Platform.OS === "web") {
@@ -160,17 +158,14 @@ export default function CartScreen() {
 
       // ── Web: redirect to Stripe hosted checkout ──
       if (Platform.OS === "web") {
-        const response = await fetch(
-          `${API_BASE}/api/create-checkout-session`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              amount: Math.round(total * 100),
-              items: cartItems,
-            }),
-          },
-        );
+        const response = await fetch(`${API_URL}/api/create-checkout-session`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: Math.round(total * 100),
+            items: cartItems,
+          }),
+        });
 
         if (!response.ok) throw new Error("Failed to create checkout session");
 
@@ -179,8 +174,8 @@ export default function CartScreen() {
         return;
       }
 
-      // ── Native: Stripe payment sheet ────────────
-      const response = await fetch(`${API_BASE}/api/create-payment-intent`, {
+      // ── Stripe Native ────────────
+      const response = await fetch(`${API_URL}/api/create-payment-intent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: Math.round(total * 100) }),
@@ -224,7 +219,7 @@ export default function CartScreen() {
         return;
       }
 
-      // ── Success (native) ─────────────────────────
+      // ── Success ─────────────────────────
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setOrdered(true);
       Animated.spring(checkAnim, {
@@ -243,8 +238,6 @@ export default function CartScreen() {
       setLoading(false);
     }
   };
-
-  // ─── Success State ──────────────────────────────────────────────────────────
 
   if (ordered) {
     return (

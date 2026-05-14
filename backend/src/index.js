@@ -12,9 +12,6 @@ app.use(express.json());
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-// ─── Menu Data ────────────────────────────────────────────────────────────────
-
 const menu_items = Object.values(menu).flat();
 
 // ─── Menu Endpoint ────────────────────────────────────────────────────────────
@@ -23,9 +20,7 @@ app.get("/api/menu", (req, res) => {
   res.json({ success: true, menu: menu });
 });
 
-// ─── Stripe: Create PaymentIntent ─────────────────────────────────────────────
-// Called by CartScreen before presenting the Stripe payment sheet.
-// `amount` must be in cents (e.g. $12.50 → 1250).
+// ─── Stripe ─────────────────────────────────────────────
 
 app.post("/api/create-payment-intent", async (req, res) => {
   const { amount } = req.body;
@@ -39,7 +34,6 @@ app.post("/api/create-payment-intent", async (req, res) => {
       amount, // in cents
       currency: "usd",
       automatic_payment_methods: { enabled: true },
-      // Optional: attach metadata for your records
       metadata: { source: "bistro-app" },
     });
 
@@ -65,8 +59,8 @@ app.post("/api/create-checkout-session", async (req, res) => {
         },
         quantity: item.quantity,
       })),
-      success_url: "http://localhost:8081/cart?success=true",
-      cancel_url: "http://localhost:8081/cart?canceled=true",
+      success_url: `${process.env.FRONTEND_URL}/cart?success=true`,
+      cancel_url: `${process.env.FRONTEND_URL}/cart?canceled=true`,
     });
 
     res.json({ url: session.url });
@@ -198,7 +192,6 @@ sorbet → DE3 "Seasonal Sorbet"
         : { message: rawText, actions: [], suggestions: [] };
     }
 
-    // Server-side safety net: fix wrong IDs by name
     if (parsed.actions) {
       parsed.actions = parsed.actions.map((action) => {
         if (
