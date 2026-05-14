@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef } from "react";
 import {
   View,
   Text,
@@ -7,14 +7,21 @@ import {
   TouchableOpacity,
   Animated,
   Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useBistroStore, CartItem } from '../../store/bistroStore';
-import { Colors, Fonts, Spacing, Radii, Shadows } from '../../constants/design';
-import { Feather } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+  Alert,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { useBistroStore, CartItem } from "../../store/bistroStore";
+import { Colors, Fonts, Spacing, Radii, Shadows } from "../../constants/design";
+import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
+import { useStripe } from "../../mocks/stripe-react-native";
+
+// ─── Config ───────────────────────────────────────────────────────────────────
+const API_BASE = "http://localhost:3001";
+
+// ─── CartRow ──────────────────────────────────────────────────────────────────
 
 function CartRow({ item }: { item: CartItem }) {
   const { updateQuantity, removeItem } = useBistroStore();
@@ -22,15 +29,24 @@ function CartRow({ item }: { item: CartItem }) {
   const opacityAnim = useRef(new Animated.Value(1)).current;
 
   const handleRemove = () => {
-    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (Platform.OS !== "web")
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Animated.parallel([
-      Animated.timing(slideAnim, { toValue: 60, duration: 200, useNativeDriver: true }),
-      Animated.timing(opacityAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(slideAnim, {
+        toValue: 60,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
     ]).start(() => removeItem(item.id));
   };
 
   const handleDecrement = () => {
-    if (Platform.OS !== 'web') Haptics.selectionAsync();
+    if (Platform.OS !== "web") Haptics.selectionAsync();
     if (item.quantity === 1) {
       handleRemove();
     } else {
@@ -39,7 +55,7 @@ function CartRow({ item }: { item: CartItem }) {
   };
 
   const handleIncrement = () => {
-    if (Platform.OS !== 'web') Haptics.selectionAsync();
+    if (Platform.OS !== "web") Haptics.selectionAsync();
     updateQuantity(item.id, item.quantity + 1);
   };
 
@@ -58,29 +74,50 @@ function CartRow({ item }: { item: CartItem }) {
       </View>
 
       <View style={styles.itemInfo}>
-        <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.itemName} numberOfLines={1}>
+          {item.name}
+        </Text>
         <Text style={styles.itemPrice}>${item.price} each</Text>
       </View>
 
       <View style={styles.qtyControls}>
-        <TouchableOpacity style={styles.qtyBtn} onPress={handleDecrement} activeOpacity={0.7}>
-          <Feather name={item.quantity === 1 ? 'trash-2' : 'minus'} size={14} color={Colors.textSecondary} />
+        <TouchableOpacity
+          style={styles.qtyBtn}
+          onPress={handleDecrement}
+          activeOpacity={0.7}
+        >
+          <Feather
+            name={item.quantity === 1 ? "trash-2" : "minus"}
+            size={14}
+            color={Colors.textSecondary}
+          />
         </TouchableOpacity>
         <Text style={styles.qtyText}>{item.quantity}</Text>
-        <TouchableOpacity style={[styles.qtyBtn, styles.qtyBtnAdd]} onPress={handleIncrement} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={[styles.qtyBtn, styles.qtyBtnAdd]}
+          onPress={handleIncrement}
+          activeOpacity={0.7}
+        >
           <Feather name="plus" size={14} color={Colors.bg} />
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.subtotal}>${(item.price * item.quantity).toFixed(2)}</Text>
+      <Text style={styles.subtotal}>
+        ${(item.price * item.quantity).toFixed(2)}
+      </Text>
     </Animated.View>
   );
 }
 
+// ─── CartScreen ───────────────────────────────────────────────────────────────
+
 export default function CartScreen() {
   const { cartItems, cartTotal, clearCart } = useBistroStore();
   const router = useRouter();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+
   const [ordered, setOrdered] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
   const checkAnim = useRef(new Animated.Value(0)).current;
 
   const subtotal = cartTotal();
@@ -88,36 +125,155 @@ export default function CartScreen() {
   const tip = subtotal * 0.18;
   const total = subtotal + tax + tip;
 
-  const handleOrder = () => {
-    if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setOrdered(true);
-    Animated.spring(checkAnim, { toValue: 1, useNativeDriver: true, bounciness: 12 }).start();
-    setTimeout(() => {
-      setOrdered(false);
-      checkAnim.setValue(0);
-      clearCart();
-    }, 3000);
+  // ─── Handle Stripe redirect back from hosted checkout (web only) ────────────
+
+  React.useEffect(() => {
+    if (Platform.OS === "web") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("success") === "true") {
+        clearCart();
+        setOrdered(true);
+        Animated.spring(checkAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          bounciness: 12,
+        }).start();
+        setTimeout(() => {
+          setOrdered(false);
+          checkAnim.setValue(0);
+          window.history.replaceState({}, "", "/cart");
+        }, 3000);
+      }
+    }
+  }, []);
+
+  // ─── Payment Flow ───────────────────────────────────────────────────────────
+
+  const handleOrder = async () => {
+    if (loading) return;
+    setLoading(true);
+
+    try {
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+
+      // ── Web: redirect to Stripe hosted checkout ──
+      if (Platform.OS === "web") {
+        const response = await fetch(
+          `${API_BASE}/api/create-checkout-session`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              amount: Math.round(total * 100),
+              items: cartItems,
+            }),
+          },
+        );
+
+        if (!response.ok) throw new Error("Failed to create checkout session");
+
+        const { url } = await response.json();
+        window.location.href = url;
+        return;
+      }
+
+      // ── Native: Stripe payment sheet ────────────
+      const response = await fetch(`${API_BASE}/api/create-payment-intent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: Math.round(total * 100) }),
+      });
+
+      if (!response.ok) throw new Error("Failed to create payment intent");
+
+      const { clientSecret } = await response.json();
+
+      const { error: initError } = await initPaymentSheet({
+        merchantDisplayName: "The Intelligent Bistro",
+        paymentIntentClientSecret: clientSecret,
+        defaultBillingDetails: { name: "Guest" },
+        appearance: {
+          colors: {
+            primary: Colors.gold,
+            background: Colors.bgCard,
+            componentBackground: Colors.bgElevated,
+            componentBorder: Colors.border,
+            componentDivider: Colors.borderSubtle,
+            primaryText: Colors.textPrimary,
+            secondaryText: Colors.textSecondary,
+            placeholderText: Colors.textDim,
+          },
+        },
+      });
+
+      if (initError) {
+        Alert.alert("Payment Error", initError.message);
+        setLoading(false);
+        return;
+      }
+
+      const { error: payError } = await presentPaymentSheet();
+
+      if (payError) {
+        if (payError.code !== "Canceled") {
+          Alert.alert("Payment Failed", payError.message);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // ── Success (native) ─────────────────────────
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setOrdered(true);
+      Animated.spring(checkAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        bounciness: 12,
+      }).start();
+      setTimeout(() => {
+        setOrdered(false);
+        checkAnim.setValue(0);
+        clearCart();
+      }, 3000);
+    } catch (err: any) {
+      Alert.alert("Something went wrong", err.message || "Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // ─── Success State ──────────────────────────────────────────────────────────
 
   if (ordered) {
     return (
       <View style={[styles.container, styles.successContainer]}>
-        <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Animated.View style={[styles.successCheck, { transform: [{ scale: checkAnim }] }]}>
+        <SafeAreaView
+          edges={["top", "bottom"]}
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+        >
+          <Animated.View
+            style={[styles.successCheck, { transform: [{ scale: checkAnim }] }]}
+          >
             <Text style={styles.successEmoji}>✓</Text>
           </Animated.View>
           <Text style={styles.successTitle}>Order Placed!</Text>
-          <Text style={styles.successSub}>Your delicious meal is being prepared.</Text>
+          <Text style={styles.successSub}>
+            Your delicious meal is being prepared.
+          </Text>
           <Text style={styles.successTime}>Estimated time: 20–25 min</Text>
         </SafeAreaView>
       </View>
     );
   }
 
+  // ─── Empty State ────────────────────────────────────────────────────────────
+
   if (cartItems.length === 0) {
     return (
       <View style={styles.container}>
-        <SafeAreaView edges={['top']}>
+        <SafeAreaView edges={["top"]}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Your Order</Text>
           </View>
@@ -126,14 +282,29 @@ export default function CartScreen() {
         <View style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>🍽️</Text>
           <Text style={styles.emptyTitle}>Your cart is empty</Text>
-          <Text style={styles.emptySubtitle}>Browse the menu or ask our AI to help you build the perfect meal.</Text>
+          <Text style={styles.emptySubtitle}>
+            Browse the menu or ask our AI to help you build the perfect meal.
+          </Text>
           <View style={styles.emptyActions}>
-            <TouchableOpacity style={styles.emptyBtn} onPress={() => router.push('/')} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.emptyBtn}
+              onPress={() => router.push("/")}
+              activeOpacity={0.8}
+            >
               <Text style={styles.emptyBtnText}>Browse Menu</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.emptyBtn, styles.emptyBtnGold]} onPress={() => router.push('/chat')} activeOpacity={0.8}>
-              <LinearGradient colors={[Colors.gold, '#A87030']} style={styles.emptyBtnGrad}>
-                <Text style={[styles.emptyBtnText, { color: Colors.bg }]}>✦ Ask AI</Text>
+            <TouchableOpacity
+              style={[styles.emptyBtn, styles.emptyBtnGold]}
+              onPress={() => router.push("/chat")}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={[Colors.gold, "#A87030"]}
+                style={styles.emptyBtnGrad}
+              >
+                <Text style={[styles.emptyBtnText, { color: Colors.bg }]}>
+                  ✦ Ask AI
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -142,9 +313,11 @@ export default function CartScreen() {
     );
   }
 
+  // ─── Main Cart ──────────────────────────────────────────────────────────────
+
   return (
     <View style={styles.container}>
-      <SafeAreaView edges={['top']}>
+      <SafeAreaView edges={["top"]}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Your Order</Text>
           <TouchableOpacity onPress={clearCart} style={styles.clearBtn}>
@@ -155,7 +328,7 @@ export default function CartScreen() {
 
       <FlatList
         data={cartItems}
-        keyExtractor={i => i.id}
+        keyExtractor={(i) => i.id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -183,22 +356,26 @@ export default function CartScreen() {
         }
       />
 
-      {/* Order button */}
-      <SafeAreaView edges={['bottom']}>
+      <SafeAreaView edges={["bottom"]}>
         <View style={styles.footer}>
           <TouchableOpacity
-            style={styles.orderBtn}
+            style={[styles.orderBtn, loading && styles.orderBtnDisabled]}
             onPress={handleOrder}
             activeOpacity={0.9}
+            disabled={loading}
           >
             <LinearGradient
-              colors={[Colors.gold, '#A87030']}
+              colors={loading ? ["#888", "#666"] : [Colors.gold, "#A87030"]}
               style={styles.orderBtnGrad}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={styles.orderBtnText}>Place Order</Text>
-              <Text style={styles.orderBtnTotal}>${total.toFixed(2)}</Text>
+              <Text style={styles.orderBtnText}>
+                {loading ? "Processing..." : "Pay Now"}
+              </Text>
+              {!loading && (
+                <Text style={styles.orderBtnTotal}>${total.toFixed(2)}</Text>
+              )}
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -207,15 +384,17 @@ export default function CartScreen() {
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.bg,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
@@ -243,8 +422,8 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xl,
   },
   cartRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     paddingVertical: 4,
   },
@@ -253,8 +432,8 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: Radii.md,
     backgroundColor: Colors.bgElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   emojiText: {
     fontSize: 22,
@@ -274,8 +453,8 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
   },
   qtyControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     backgroundColor: Colors.bgCard,
     borderRadius: Radii.full,
@@ -289,8 +468,8 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     backgroundColor: Colors.bgElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   qtyBtnAdd: {
     backgroundColor: Colors.gold,
@@ -300,14 +479,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textPrimary,
     minWidth: 18,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtotal: {
     fontFamily: Fonts.bodyBold,
     fontSize: 14,
     color: Colors.gold,
     minWidth: 52,
-    textAlign: 'right',
+    textAlign: "right",
   },
   separator: {
     height: 1,
@@ -328,8 +507,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 8,
   },
   summaryLabel: {
@@ -366,13 +545,16 @@ const styles = StyleSheet.create({
   },
   orderBtn: {
     borderRadius: Radii.xl,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Shadows.gold,
   },
+  orderBtnDisabled: {
+    opacity: 0.6,
+  },
   orderBtnGrad: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: Spacing.xl,
     paddingVertical: 16,
   },
@@ -390,8 +572,8 @@ const styles = StyleSheet.create({
   // Empty state
   emptyState: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: Spacing.xl,
     gap: 12,
   },
@@ -408,12 +590,12 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: 14,
     color: Colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
     maxWidth: 280,
   },
   emptyActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginTop: Spacing.md,
   },
@@ -421,10 +603,10 @@ const styles = StyleSheet.create({
     borderRadius: Radii.xl,
     borderWidth: 1,
     borderColor: Colors.border,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   emptyBtnGold: {
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   emptyBtnGrad: {
     paddingHorizontal: 20,
@@ -439,8 +621,8 @@ const styles = StyleSheet.create({
   },
   // Success state
   successContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   successCheck: {
     width: 100,
@@ -449,8 +631,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.goldGlow,
     borderWidth: 2,
     borderColor: Colors.gold,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: Spacing.lg,
   },
   successEmoji: {
@@ -468,7 +650,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: 15,
     color: Colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   successTime: {
     fontFamily: Fonts.displayItalic,

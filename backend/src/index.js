@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import Groq from "groq-sdk";
+import Stripe from "stripe";
 import menu from "./data/menu.json" with { type: "json" };
 
 dotenv.config();
@@ -10,17 +11,73 @@ app.use(cors());
 app.use(express.json());
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// ─── Menu Data ───────────────────────────────────────────────────────────────
+// ─── Menu Data ────────────────────────────────────────────────────────────────
 
 const menu_items = Object.values(menu).flat();
 
 // ─── Menu Endpoint ────────────────────────────────────────────────────────────
+
 app.get("/api/menu", (req, res) => {
   res.json({ success: true, menu: menu });
 });
 
+// ─── Stripe: Create PaymentIntent ─────────────────────────────────────────────
+// Called by CartScreen before presenting the Stripe payment sheet.
+// `amount` must be in cents (e.g. $12.50 → 1250).
+
+app.post("/api/create-payment-intent", async (req, res) => {
+  const { amount } = req.body;
+
+  if (!amount || typeof amount !== "number" || amount < 50) {
+    return res.status(400).json({ error: "Invalid amount (minimum 50 cents)" });
+  }
+
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount, // in cents
+      currency: "usd",
+      automatic_payment_methods: { enabled: true },
+      // Optional: attach metadata for your records
+      metadata: { source: "bistro-app" },
+    });
+
+    res.json({ clientSecret: paymentIntent.client_secret });
+  } catch (err) {
+    console.error("Stripe error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/create-checkout-session", async (req, res) => {
+  const { amount, items } = req.body;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      line_items: items.map((item) => ({
+        price_data: {
+          currency: "usd",
+          product_data: { name: item.name },
+          unit_amount: Math.round(item.price * 100),
+        },
+        quantity: item.quantity,
+      })),
+      success_url: "http://localhost:8081/cart?success=true",
+      cancel_url: "http://localhost:8081/cart?canceled=true",
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error("Stripe checkout error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── AI Chat Endpoint ─────────────────────────────────────────────────────────
+
 app.post("/api/chat", async (req, res) => {
   const { message, cartItems = [], conversationHistory = [] } = req.body;
 
@@ -125,7 +182,7 @@ sorbet → DE3 "Seasonal Sorbet"
       messages,
       temperature: 0.5,
       max_tokens: 512,
-      response_format: { type: "json_object" }, // forces valid JSON
+      response_format: { type: "json_object" },
     });
 
     const rawText = completion.choices[0]?.message?.content || "{}";
@@ -175,6 +232,7 @@ sorbet → DE3 "Seasonal Sorbet"
 });
 
 // ─── Rule-Based Fallback Parser ───────────────────────────────────────────────
+
 function ruleBasedParser(message, cartItems) {
   const lower = message.toLowerCase();
   const actions = [];
@@ -283,6 +341,7 @@ function ruleBasedParser(message, cartItems) {
 }
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
+
 app.get("/health", (req, res) =>
   res.json({ status: "ok", timestamp: new Date() }),
 );
